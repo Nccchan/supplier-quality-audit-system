@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>購買先マスター一覧 - Supplier Master List</title>
+    <style>
+        body {
+            font-family: 'Meiryo', 'MS PGothic', sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        .filter-section {
+            background-color: #f9f9f9;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .filter-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .filter-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .filter-item label {
+            font-weight: bold;
+            min-width: 100px;
+        }
+        .filter-item select, .filter-item input {
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+        .btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        .btn-primary {
+            background-color: #0066cc;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #0052a3;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th {
+            background-color: #0066cc;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+        }
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .alert-critical {
+            background-color: #ffebee;
+            color: #c62828;
+            font-weight: bold;
+        }
+        .alert-warning {
+            background-color: #fff3e0;
+            color: #ef6c00;
+            font-weight: bold;
+        }
+        .alert-normal {
+            background-color: white;
+        }
+        .badge {
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .badge-grade-1 {
+            background-color: #4caf50;
+            color: white;
+        }
+        .badge-grade-2 {
+            background-color: #2196f3;
+            color: white;
+        }
+        .badge-grade-3 {
+            background-color: #ff9800;
+            color: white;
+        }
+        .badge-iso-yes {
+            background-color: #4caf50;
+            color: white;
+        }
+        .badge-iso-no {
+            background-color: #9e9e9e;
+            color: white;
+        }
+        .status-active {
+            color: #4caf50;
+            font-weight: bold;
+        }
+        .status-suspended {
+            color: #f44336;
+            font-weight: bold;
+        }
+        .status-inactive {
+            color: #9e9e9e;
+            font-weight: bold;
+        }
+        .action-links a {
+            color: #0066cc;
+            text-decoration: none;
+            margin-right: 10px;
+        }
+        .action-links a:hover {
+            text-decoration: underline;
+        }
+        .summary-section {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .summary-card {
+            flex: 1;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .summary-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #666;
+        }
+        .summary-card .number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #0066cc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>購買先マスター一覧 (Supplier Master List)</h1>
+        
+        <!-- サマリーセクション -->
+        <div class="summary-section">
+            <div class="summary-card" style="background-color: #e3f2fd;">
+                <h3>総購買先数</h3>
+                <div class="number" id="totalSuppliers">0</div>
+            </div>
+            <div class="summary-card" style="background-color: #fff3e0;">
+                <h3>再評価期限間近</h3>
+                <div class="number" id="dueSoonCount">0</div>
+            </div>
+            <div class="summary-card" style="background-color: #ffebee;">
+                <h3>期限超過</h3>
+                <div class="number" id="overdueCount">0</div>
+            </div>
+        </div>
+
+        <!-- フィルターセクション -->
+        <div class="filter-section">
+            <h3>検索・フィルター</h3>
+            <div class="filter-row">
+                <div class="filter-item">
+                    <label>会社名:</label>
+                    <input type="text" id="filterCompanyName" placeholder="会社名で検索">
+                </div>
+                <div class="filter-item">
+                    <label>等級:</label>
+                    <select id="filterRating">
+                        <option value="">全て</option>
+                        <option value="1">1 (優良)</option>
+                        <option value="2">2 (良好)</option>
+                        <option value="3">3 (標準)</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label>ISO9001:</label>
+                    <select id="filterISO">
+                        <option value="">全て</option>
+                        <option value="1">認証あり</option>
+                        <option value="0">認証なし</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label>ステータス:</label>
+                    <select id="filterStatus">
+                        <option value="">全て</option>
+                        <option value="ACTIVE">有効</option>
+                        <option value="SUSPENDED">停止</option>
+                        <option value="INACTIVE">無効</option>
+                    </select>
+                </div>
+            </div>
+            <div class="filter-row">
+                <div class="filter-item">
+                    <label>再評価期限:</label>
+                    <select id="filterReviewDate">
+                        <option value="">全て</option>
+                        <option value="overdue">期限超過</option>
+                        <option value="due_soon">1ヶ月以内</option>
+                        <option value="normal">通常</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <button class="btn btn-primary" onclick="applyFilters()">検索</button>
+                    <button class="btn btn-secondary" onclick="clearFilters()">クリア</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- アクションボタン -->
+        <div style="margin-bottom: 20px;">
+            <button class="btn btn-success" onclick="openNewSupplierForm()">+ 新規購買先登録</button>
+            <button class="btn btn-primary" onclick="exportToExcel()">Excel出力</button>
+        </div>
+
+        <!-- 購買先一覧テーブル -->
+        <table id="supplierTable">
+            <thead>
+                <tr>
+                    <th>購買先ID</th>
+                    <th>会社名</th>
+                    <th>等級</th>
+                    <th>ISO9001</th>
+                    <th>初回登録日</th>
+                    <th>次回審査予定日</th>
+                    <th>アラート</th>
+                    <th>ステータス</th>
+                    <th>アクション</th>
+                </tr>
+            </thead>
+            <tbody id="supplierTableBody">
+                <!-- データはJavaScriptで動的に生成 -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // サンプルデータ（実際の実装ではintra-mart APIからデータ取得）
+        const sampleSuppliers = [
+            {
+                supplierId: 'SUP-20231115-001',
+                companyName: '株式会社優良部品製作所',
+                rating: 1,
+                iso9001: true,
+                initialDate: '2023-11-15',
+                nextReviewDate: '2025-11-15',
+                status: 'ACTIVE'
+            },
+            {
+                supplierId: 'SUP-20240301-002',
+                companyName: '中部機械工業株式会社',
+                rating: 2,
+                iso9001: false,
+                initialDate: '2024-03-01',
+                nextReviewDate: '2026-03-01',
+                status: 'ACTIVE'
+            },
+            {
+                supplierId: 'SUP-20231201-003',
+                companyName: '関西精密株式会社',
+                rating: 3,
+                iso9001: true,
+                initialDate: '2023-12-01',
+                nextReviewDate: '2025-12-01',
+                status: 'ACTIVE'
+            },
+            {
+                supplierId: 'SUP-20251110-004',
+                companyName: '九州電子部品株式会社',
+                rating: null,
+                iso9001: true,
+                initialDate: '2025-11-10',
+                nextReviewDate: null,
+                status: 'ACTIVE'
+            },
+            {
+                supplierId: 'SUP-20240615-005',
+                companyName: '東北製造株式会社',
+                rating: 3,
+                iso9001: false,
+                initialDate: '2024-06-15',
+                nextReviewDate: '2026-06-15',
+                status: 'SUSPENDED'
+            }
+        ];
+
+        // アラートレベルを判定
+        function getAlertLevel(nextReviewDate) {
+            if (!nextReviewDate) return 'normal';
+            
+            const today = new Date();
+            const reviewDate = new Date(nextReviewDate);
+            const oneMonthFromNow = new Date();
+            oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
+            
+            if (reviewDate < today) {
+                return 'critical'; // 期限超過
+            } else if (reviewDate <= oneMonthFromNow) {
+                return 'warning'; // 1ヶ月以内
+            } else {
+                return 'normal';
+            }
+        }
+
+        // テーブルを描画
+        function renderTable(suppliers) {
+            const tbody = document.getElementById('supplierTableBody');
+            tbody.innerHTML = '';
+            
+            let dueSoonCount = 0;
+            let overdueCount = 0;
+            
+            suppliers.forEach(supplier => {
+                const alertLevel = getAlertLevel(supplier.nextReviewDate);
+                const rowClass = alertLevel === 'critical' ? 'alert-critical' : 
+                               alertLevel === 'warning' ? 'alert-warning' : 'alert-normal';
+                
+                if (alertLevel === 'warning') dueSoonCount++;
+                if (alertLevel === 'critical') overdueCount++;
+                
+                const ratingBadge = supplier.rating ? 
+                    `<span class="badge badge-grade-${supplier.rating}">${supplier.rating} (${getRatingText(supplier.rating)})</span>` : 
+                    '<span class="badge" style="background-color: #ccc;">未評価</span>';
+                
+                const isoBadge = supplier.iso9001 ? 
+                    '<span class="badge badge-iso-yes">認証あり</span>' : 
+                    '<span class="badge badge-iso-no">認証なし</span>';
+                
+                const statusClass = supplier.status === 'ACTIVE' ? 'status-active' : 
+                                  supplier.status === 'SUSPENDED' ? 'status-suspended' : 'status-inactive';
+                
+                const alertText = alertLevel === 'critical' ? '★期限超過★' : 
+                                alertLevel === 'warning' ? '期限間近' : '-';
+                
+                const row = `
+                    <tr class="${rowClass}">
+                        <td>${supplier.supplierId}</td>
+                        <td><strong>${supplier.companyName}</strong></td>
+                        <td>${ratingBadge}</td>
+                        <td>${isoBadge}</td>
+                        <td>${supplier.initialDate}</td>
+                        <td>${supplier.nextReviewDate || '-'}</td>
+                        <td>${alertText}</td>
+                        <td class="${statusClass}">${getStatusText(supplier.status)}</td>
+                        <td class="action-links">
+                            <a href="#" onclick="viewSupplier('${supplier.supplierId}')">詳細</a>
+                            <a href="#" onclick="editSupplier('${supplier.supplierId}')">編集</a>
+                            <a href="#" onclick="viewAuditHistory('${supplier.supplierId}')">審査履歴</a>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+            
+            // サマリー更新
+            document.getElementById('totalSuppliers').textContent = suppliers.length;
+            document.getElementById('dueSoonCount').textContent = dueSoonCount;
+            document.getElementById('overdueCount').textContent = overdueCount;
+        }
+
+        function getRatingText(rating) {
+            const texts = { 1: '優良', 2: '良好', 3: '標準' };
+            return texts[rating] || '';
+        }
+
+        function getStatusText(status) {
+            const texts = { 'ACTIVE': '有効', 'SUSPENDED': '停止', 'INACTIVE': '無効' };
+            return texts[status] || status;
+        }
+
+        // フィルター適用
+        function applyFilters() {
+            const companyName = document.getElementById('filterCompanyName').value.toLowerCase();
+            const rating = document.getElementById('filterRating').value;
+            const iso = document.getElementById('filterISO').value;
+            const status = document.getElementById('filterStatus').value;
+            const reviewDate = document.getElementById('filterReviewDate').value;
+            
+            let filtered = sampleSuppliers.filter(supplier => {
+                if (companyName && !supplier.companyName.toLowerCase().includes(companyName)) return false;
+                if (rating && supplier.rating != rating) return false;
+                if (iso && (supplier.iso9001 ? '1' : '0') != iso) return false;
+                if (status && supplier.status != status) return false;
+                if (reviewDate) {
+                    const alertLevel = getAlertLevel(supplier.nextReviewDate);
+                    if (reviewDate === 'overdue' && alertLevel !== 'critical') return false;
+                    if (reviewDate === 'due_soon' && alertLevel !== 'warning') return false;
+                    if (reviewDate === 'normal' && alertLevel !== 'normal') return false;
+                }
+                return true;
+            });
+            
+            renderTable(filtered);
+        }
+
+        function clearFilters() {
+            document.getElementById('filterCompanyName').value = '';
+            document.getElementById('filterRating').value = '';
+            document.getElementById('filterISO').value = '';
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterReviewDate').value = '';
+            renderTable(sampleSuppliers);
+        }
+
+        function viewSupplier(id) {
+            alert('購買先詳細画面へ遷移: ' + id);
+            // 実際の実装では intra-mart の画面遷移APIを使用
+        }
+
+        function editSupplier(id) {
+            alert('購買先編集画面へ遷移: ' + id);
+        }
+
+        function viewAuditHistory(id) {
+            alert('審査履歴画面へ遷移: ' + id);
+        }
+
+        function openNewSupplierForm() {
+            alert('新規購買先登録画面へ遷移');
+        }
+
+        function exportToExcel() {
+            alert('Excel出力機能（実装予定）');
+        }
+
+        // 初期表示
+        renderTable(sampleSuppliers);
+    </script>
+</body>
+</html>

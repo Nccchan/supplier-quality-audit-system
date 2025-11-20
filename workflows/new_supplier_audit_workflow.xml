@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+    新規購買先審査ワークフロー定義
+    New Supplier Audit Workflow Definition
+    
+    GCP0602 付表-4準拠
+    
+    フロー概要:
+    1. 審査申請（申請部門）
+    2. 審査実施（品質保証部）
+    3. 審査結果報告（品質保証部）
+    4. 承認（品質保証部長）
+    5. 購買先リスト登録（品質保証部）
+-->
+<workflow-definition 
+    xmlns="http://www.intra-mart.jp/workflow/definition"
+    workflow-id="new_supplier_audit"
+    workflow-name="新規購買先審査プロセス"
+    version="1.0">
+    
+    <description>
+        新規購買先の審査申請から承認、購買先リスト登録までのワークフロー。
+        GCP0602「購買先の品質審査管理規定」に準拠。
+    </description>
+    
+    <!-- ワークフローパラメータ定義 -->
+    <parameters>
+        <parameter name="supplierName" type="string" required="true" label="購買先名"/>
+        <parameter name="requestDepartment" type="string" required="true" label="申請部門"/>
+        <parameter name="requestDate" type="date" required="true" label="申請日"/>
+        <parameter name="iso9001Certified" type="boolean" required="true" label="ISO9001認証有無"/>
+        <parameter name="auditType" type="string" required="true" label="審査種別" default="NEW"/>
+        <parameter name="documentAuditScore" type="decimal" label="書類審査点数"/>
+        <parameter name="onSiteAuditScore" type="decimal" label="実地審査点数"/>
+        <parameter name="totalScore" type="decimal" label="総合点"/>
+        <parameter name="rating" type="string" label="評価"/>
+        <parameter name="decision" type="string" label="判定"/>
+        <parameter name="auditReportFile" type="string" label="審査報告書ファイル"/>
+    </parameters>
+    
+    <!-- ノード定義 -->
+    <nodes>
+        <!-- 開始ノード -->
+        <start-node id="start" name="開始">
+            <transition to="audit_request"/>
+        </start-node>
+        
+        <!-- 1. 審査申請（様式-1相当） -->
+        <user-task-node id="audit_request" name="審査申請">
+            <description>申請部門が新規購買先の審査を申請する</description>
+            <assignee role="REQUESTING_DEPT"/>
+            <form-reference form-id="audit_request_form"/>
+            <transition to="audit_review" condition="submitted"/>
+            <transition to="end_rejected" condition="cancelled"/>
+        </user-task-node>
+        
+        <!-- 2. 審査実施（書類審査・実地審査） -->
+        <user-task-node id="audit_review" name="審査実施">
+            <description>品質保証部が書類審査（様式-2）および実地審査（様式-5）を実施</description>
+            <assignee role="QA_AUDITOR"/>
+            <form-reference form-id="audit_scoring_form"/>
+            <transition to="audit_report" condition="completed"/>
+            <transition to="audit_request" condition="return_to_requester"/>
+        </user-task-node>
+        
+        <!-- 3. 審査結果報告（様式-8） -->
+        <user-task-node id="audit_report" name="審査結果報告">
+            <description>品質保証部が審査結果報告書（様式-8）を作成</description>
+            <assignee role="QA_AUDITOR"/>
+            <form-reference form-id="audit_report_form"/>
+            <transition to="qa_manager_approval" condition="submitted"/>
+            <transition to="audit_review" condition="revise"/>
+        </user-task-node>
+        
+        <!-- 4. 品質保証部長承認 -->
+        <approval-node id="qa_manager_approval" name="品質保証部長承認">
+            <description>品質保証部長が審査結果を承認</description>
+            <assignee role="QA_MANAGER"/>
+            <transition to="check_decision" condition="approved"/>
+            <transition to="audit_report" condition="rejected"/>
+        </approval-node>
+        
+        <!-- 5. 判定分岐 -->
+        <gateway-node id="check_decision" name="判定確認" type="exclusive">
+            <description>審査結果の判定に基づいて処理を分岐</description>
+            <transition to="register_supplier" condition="${decision == 'PASS'}"/>
+            <transition to="corrective_action" condition="${decision == 'CONDITIONAL'}"/>
+            <transition to="end_rejected" condition="${decision == 'FAIL'}"/>
+        </gateway-node>
+        
+        <!-- 6. 是正処置プロセス -->
+        <user-task-node id="corrective_action" name="是正処置要求">
+            <description>購買先に是正処置を要求し、是正完了後に再審査</description>
+            <assignee role="QA_AUDITOR"/>
+            <form-reference form-id="corrective_action_form"/>
+            <transition to="verify_corrective_action" condition="submitted"/>
+        </user-task-node>
+        
+        <user-task-node id="verify_corrective_action" name="是正処置検証">
+            <description>是正処置の完了を検証</description>
+            <assignee role="QA_AUDITOR"/>
+            <transition to="qa_manager_approval_after_correction" condition="verified"/>
+            <transition to="end_rejected" condition="not_verified"/>
+        </user-task-node>
+        
+        <approval-node id="qa_manager_approval_after_correction" name="是正後承認">
+            <description>是正処置完了後の品質保証部長承認</description>
+            <assignee role="QA_MANAGER"/>
+            <transition to="register_supplier" condition="approved"/>
+            <transition to="end_rejected" condition="rejected"/>
+        </approval-node>
+        
+        <!-- 7. 購買先リスト登録 -->
+        <service-task-node id="register_supplier" name="購買先リスト登録">
+            <description>承認された購買先をSupplierMasterに登録</description>
+            <service-class>jp.co.company.sqas.service.SupplierRegistrationService</service-class>
+            <method>registerNewSupplier</method>
+            <transition to="notify_completion"/>
+        </service-task-node>
+        
+        <!-- 8. 完了通知 -->
+        <notification-node id="notify_completion" name="完了通知">
+            <description>申請部門および関係部門に完了を通知</description>
+            <recipients>
+                <recipient role="REQUESTING_DEPT"/>
+                <recipient role="PROCUREMENT_DEPT"/>
+                <recipient role="QA_MANAGER"/>
+            </recipients>
+            <message-template>
+                件名: 新規購買先審査完了のお知らせ
+                
+                購買先「${supplierName}」の審査が完了しました。
+                
+                審査結果:
+                - 総合点: ${totalScore}点
+                - 評価: ${rating}
+                - 判定: ${decision}
+                - 等級: ${currentRating}
+                
+                購買先マスターに登録されました。
+            </message-template>
+            <transition to="end_approved"/>
+        </notification-node>
+        
+        <!-- 終了ノード（承認） -->
+        <end-node id="end_approved" name="終了（承認）">
+            <result>APPROVED</result>
+        </end-node>
+        
+        <!-- 終了ノード（却下） -->
+        <end-node id="end_rejected" name="終了（却下）">
+            <result>REJECTED</result>
+        </end-node>
+    </nodes>
+    
+    <!-- ロール定義 -->
+    <roles>
+        <role id="REQUESTING_DEPT" name="申請部門">
+            <description>審査を申請する部門</description>
+        </role>
+        <role id="QA_AUDITOR" name="品質保証部審査員">
+            <description>審査を実施する品質保証部の担当者</description>
+        </role>
+        <role id="QA_MANAGER" name="品質保証部長">
+            <description>審査結果を承認する品質保証部長</description>
+        </role>
+        <role id="PROCUREMENT_DEPT" name="調達部">
+            <description>購買先管理を担当する調達部</description>
+        </role>
+    </roles>
+    
+    <!-- イベントハンドラー -->
+    <event-handlers>
+        <!-- 審査承認時にSupplierMasterを更新 -->
+        <event-handler event="qa_manager_approval.approved">
+            <action class="jp.co.company.sqas.workflow.UpdateSupplierRatingAction"/>
+        </event-handler>
+        
+        <!-- 是正処置期限超過時の通知 -->
+        <event-handler event="corrective_action.deadline_exceeded">
+            <action class="jp.co.company.sqas.workflow.CorrectiveActionOverdueNotificationAction"/>
+        </event-handler>
+    </event-handlers>
+    
+    <!-- SLA（Service Level Agreement）定義 -->
+    <sla>
+        <task-sla task-id="audit_request" duration="P3D" unit="BUSINESS_DAYS"/>
+        <task-sla task-id="audit_review" duration="P10D" unit="BUSINESS_DAYS"/>
+        <task-sla task-id="audit_report" duration="P3D" unit="BUSINESS_DAYS"/>
+        <task-sla task-id="qa_manager_approval" duration="P5D" unit="BUSINESS_DAYS"/>
+        <task-sla task-id="corrective_action" duration="P30D" unit="CALENDAR_DAYS"/>
+    </sla>
+    
+</workflow-definition>
