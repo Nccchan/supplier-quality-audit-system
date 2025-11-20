@@ -4,6 +4,25 @@
 
 本システムは、GCP0602「購買先の品質審査管理規定」に準拠した購買先（サプライヤー）の審査・評価・再評価プロセスをデジタル化し、intra-mart Accel Platform環境で効率的に運用するための統合管理システムです。
 
+## 🎯 デモ環境で動作確認
+
+**intra-mart環境なしで、すぐにシステムを体験できます！**
+
+```bash
+cd demo-sandbox
+docker compose up -d
+# Web UI: http://localhost:8080
+# MailHog: http://localhost:8025
+```
+
+詳細は [demo-sandbox/DEMO_QUICKSTART.md](demo-sandbox/DEMO_QUICKSTART.md) を参照してください。
+
+デモ環境では以下の機能を体験できます：
+- 購買先マスター一覧（視覚的アラート付き）
+- 審査採点フォーム（GCP0602準拠の自動計算）
+- ワークフローシミュレーター（プロセスの可視化）
+- バッチ通知テスト（MailHogでメール確認）
+
 ### 主要機能
 
 1. **新規購買先審査プロセス**
@@ -54,6 +73,13 @@
 
 ```
 supplier-quality-audit-system/
+├── demo-sandbox/                  # 🎯 デモ環境（Docker）
+│   ├── DEMO_QUICKSTART.md        # デモ環境クイックスタート
+│   ├── README.md                 # デモ環境の説明
+│   ├── docker-compose.yml        # Docker Compose設定
+│   ├── Dockerfile                # アプリケーションDockerfile
+│   ├── pom.xml                   # Maven設定
+│   └── src/                      # Spring Bootアプリケーション
 ├── database/                      # データベース関連
 │   ├── schema_design.md          # スキーマ設計書
 │   ├── 01_create_tables.sql      # テーブル作成DDL
