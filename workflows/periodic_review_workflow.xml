@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+    定期再評価ワークフロー定義
+    Periodic Re-evaluation Workflow Definition
+    
+    GCP0602 付表-5, 付表-6準拠
+    
+    フロー概要:
+    1. 対象業者選定（調達部・品質保証部）
+    2. 実地監査実施（品質保証部）
+    3. 監査結果報告（様式-11）
+    4. 承認（品質保証部長）
+    5. フィードバック（付表-6）
+    6. 等級更新
+-->
+<workflow-definition 
+    xmlns="http://www.intra-mart.jp/workflow/definition"
+    workflow-id="periodic_review"
+    workflow-name="定期再評価プロセス"
+    version="1.0">
+    
+    <description>
+        購買先の定期再評価（初回登録から2年後）のワークフロー。
+        GCP0602「購買先の品質審査管理規定」に準拠。
+    </description>
+    
+    <!-- ワークフローパラメータ定義 -->
+    <parameters>
+        <parameter name="supplierId" type="string" required="true" label="購買先ID"/>
+        <parameter name="supplierName" type="string" required="true" label="購買先名"/>
+        <parameter name="currentRating" type="integer" required="true" label="現行等級"/>
+        <parameter name="lastReviewDate" type="date" required="true" label="前回審査日"/>
+        <parameter name="scheduledReviewDate" type="date" required="true" label="再評価予定日"/>
+        <parameter name="onSiteAuditScore" type="decimal" label="実地監査点数"/>
+        <parameter name="totalScore" type="decimal" label="総合点"/>
+        <parameter name="newRating" type="integer" label="新等級"/>
+        <parameter name="rating" type="string" label="評価"/>
+        <parameter name="decision" type="string" label="判定"/>
+        <parameter name="auditReportFile" type="string" label="監査報告書ファイル"/>
+        <parameter name="feedbackSent" type="boolean" label="フィードバック送信済"/>
+    </parameters>
+    
+    <!-- ノード定義 -->
+    <nodes>
+        <!-- 開始ノード -->
+        <start-node id="start" name="開始">
+            <transition to="select_target_suppliers"/>
+        </start-node>
+        
+        <!-- 1. 対象業者選定（付表-6） -->
+        <user-task-node id="select_target_suppliers" name="対象業者選定">
+            <description>調達部と品質保証部で再評価対象業者を選定</description>
+            <assignee role="PROCUREMENT_DEPT"/>
+            <assignee role="QA_DEPT"/>
+            <form-reference form-id="supplier_selection_form"/>
+            <transition to="schedule_onsite_audit" condition="selected"/>
+            <transition to="end_skipped" condition="skip"/>
+        </user-task-node>
+        
+        <!-- 2. 実地監査日程調整 -->
+        <user-task-node id="schedule_onsite_audit" name="実地監査日程調整">
+            <description>購買先と実地監査の日程を調整</description>
+            <assignee role="QA_AUDITOR"/>
+            <transition to="conduct_onsite_audit" condition="scheduled"/>
+        </user-task-node>
+        
+        <!-- 3. 実地監査実施（様式-11） -->
+        <user-task-node id="conduct_onsite_audit" name="実地監査実施">
+            <description>購買先の現場で実地監査を実施（様式-11）</description>
+            <assignee role="QA_AUDITOR"/>
+            <form-reference form-id="onsite_audit_form"/>
+            <transition to="prepare_audit_report" condition="completed"/>
+        </user-task-node>
+        
+        <!-- 4. 監査結果報告書作成（様式-11） -->
+        <user-task-node id="prepare_audit_report" name="監査結果報告書作成">
+            <description>実施監査結果報告書（様式-11）を作成</description>
+            <assignee role="QA_AUDITOR"/>
+            <form-reference form-id="periodic_audit_report_form"/>
+            <transition to="qa_manager_approval" condition="submitted"/>
+            <transition to="conduct_onsite_audit" condition="revise"/>
+        </user-task-node>
+        
+        <!-- 5. 品質保証部長承認 -->
+        <approval-node id="qa_manager_approval" name="品質保証部長承認">
+            <description>品質保証部長が監査結果を承認</description>
+            <assignee role="QA_MANAGER"/>
+            <transition to="check_decision" condition="approved"/>
+            <transition to="prepare_audit_report" condition="rejected"/>
+        </approval-node>
+        
+        <!-- 6. 判定分岐 -->
+        <gateway-node id="check_decision" name="判定確認" type="exclusive">
+            <description>監査結果の判定に基づいて処理を分岐</description>
+            <transition to="update_rating" condition="${decision == 'PASS'}"/>
+            <transition to="corrective_action" condition="${decision == 'CONDITIONAL'}"/>
+            <transition to="suspend_supplier" condition="${decision == 'FAIL'}"/>
+        </gateway-node>
+        
+        <!-- 7. 是正処置プロセス -->
+        <user-task-node id="corrective_action" name="是正処置要求">
+            <description>購買先に是正処置を要求</description>
+            <assignee role="QA_AUDITOR"/>
+            <form-reference form-id="corrective_action_form"/>
+            <transition to="verify_corrective_action" condition="submitted"/>
+        </user-task-node>
+        
+        <user-task-node id="verify_corrective_action" name="是正処置検証">
+            <description>是正処置の完了を検証</description>
+            <assignee role="QA_AUDITOR"/>
+            <transition to="qa_manager_approval_after_correction" condition="verified"/>
+            <transition to="suspend_supplier" condition="not_verified"/>
+        </user-task-node>
+        
+        <approval-node id="qa_manager_approval_after_correction" name="是正後承認">
+            <description>是正処置完了後の品質保証部長承認</description>
+            <assignee role="QA_MANAGER"/>
+            <transition to="update_rating" condition="approved"/>
+            <transition to="suspend_supplier" condition="rejected"/>
+        </approval-node>
+        
+        <!-- 8. 等級更新 -->
+        <service-task-node id="update_rating" name="等級更新">
+            <description>監査結果に基づいて購買先の等級を更新</description>
+            <service-class>jp.co.company.sqas.service.SupplierManagementService</service-class>
+            <method>updateSupplierRatingAfterAudit</method>
+            <transition to="send_feedback"/>
+        </service-task-node>
+        
+        <!-- 9. フィードバック送信（付表-6） -->
+        <user-task-node id="send_feedback" name="フィードバック送信">
+            <description>購買先へ監査結果のフィードバックを送信（付表-6）</description>
+            <assignee role="QA_AUDITOR"/>
+            <form-reference form-id="feedback_form"/>
+            <transition to="notify_completion" condition="sent"/>
+        </user-task-node>
+        
+        <!-- 10. 購買先停止処理 -->
+        <service-task-node id="suspend_supplier" name="購買先停止">
+            <description>不合格の場合、購買先ステータスをSUSPENDEDに変更</description>
+            <service-class>jp.co.company.sqas.service.SupplierManagementService</service-class>
+            <method>updateSupplierStatus</method>
+            <parameters>
+                <parameter name="newStatus" value="SUSPENDED"/>
+                <parameter name="reason" value="定期再評価不合格"/>
+            </parameters>
+            <transition to="notify_suspension"/>
+        </service-task-node>
+        
+        <!-- 11. 停止通知 -->
+        <notification-node id="notify_suspension" name="停止通知">
+            <description>関係部門に購買先停止を通知</description>
+            <recipients>
+                <recipient role="PROCUREMENT_DEPT"/>
+                <recipient role="QA_MANAGER"/>
+                <recipient role="REQUESTING_DEPT"/>
+            </recipients>
+            <message-template>
+                件名: 【重要】購買先停止のお知らせ
+                
+                購買先「${supplierName}」(${supplierId})について、
+                定期再評価の結果、不合格となりました。
+                
+                当該購買先との取引を停止します。
+                
+                監査結果:
+                - 総合点: ${totalScore}点
+                - 評価: ${rating}
+                - 判定: 不合格
+                
+                詳細は監査報告書をご確認ください。
+            </message-template>
+            <transition to="end_suspended"/>
+        </notification-node>
+        
+        <!-- 12. 完了通知 -->
+        <notification-node id="notify_completion" name="完了通知">
+            <description>関係部門に再評価完了を通知</description>
+            <recipients>
+                <recipient role="PROCUREMENT_DEPT"/>
+                <recipient role="QA_MANAGER"/>
+            </recipients>
+            <message-template>
+                件名: 購買先定期再評価完了のお知らせ
+                
+                購買先「${supplierName}」(${supplierId})の定期再評価が完了しました。
+                
+                監査結果:
+                - 総合点: ${totalScore}点
+                - 評価: ${rating}
+                - 判定: ${decision}
+                - 前回等級: ${currentRating}
+                - 新等級: ${newRating}
+                
+                次回再評価予定日: ${scheduledReviewDate}
+            </message-template>
+            <transition to="end_completed"/>
+        </notification-node>
+        
+        <!-- 終了ノード（完了） -->
+        <end-node id="end_completed" name="終了（完了）">
+            <result>COMPLETED</result>
+        </end-node>
+        
+        <!-- 終了ノード（停止） -->
+        <end-node id="end_suspended" name="終了（停止）">
+            <result>SUSPENDED</result>
+        </end-node>
+        
+        <!-- 終了ノード（スキップ） -->
+        <end-node id="end_skipped" name="終了（スキップ）">
+            <result>SKIPPED</result>
+        </end-node>
+    </nodes>
+    
+    <!-- ロール定義 -->
+    <roles>
+        <role id="PROCUREMENT_DEPT" name="調達部">
+            <description>購買先管理を担当する調達部</description>
+        </role>
+        <role id="QA_DEPT" name="品質保証部">
+            <description>品質保証を担当する部門</description>
+        </role>
+        <role id="QA_AUDITOR" name="品質保証部審査員">
+            <description>監査を実施する品質保証部の担当者</description>
+        </role>
+        <role id="QA_MANAGER" name="品質保証部長">
+            <description>監査結果を承認する品質保証部長</description>
+        </role>
+        <role id="REQUESTING_DEPT" name="申請部門">
+            <description>当該購買先を使用している部門</description>
+        </role>
+    </roles>
+    
+    <!-- イベントハンドラー -->
+    <event-handlers>
+        <!-- 承認時にSupplierMasterを更新 -->
+        <event-handler event="qa_manager_approval.approved">
+            <action class="jp.co.company.sqas.workflow.UpdateSupplierRatingAction"/>
+        </event-handler>
+        
+        <!-- 次回再評価日を設定 -->
+        <event-handler event="update_rating.completed">
+            <action class="jp.co.company.sqas.workflow.SetNextReviewDateAction"/>
+        </event-handler>
+    </event-handlers>
+    
+    <!-- SLA定義 -->
+    <sla>
+        <task-sla task-id="select_target_suppliers" duration="P5D" unit="BUSINESS_DAYS"/>
+        <task-sla task-id="schedule_onsite_audit" duration="P10D" unit="BUSINESS_DAYS"/>
+        <task-sla task-id="conduct_onsite_audit" duration="P1D" unit="BUSINESS_DAYS"/>
+        <task-sla task-id="prepare_audit_report" duration="P5D" unit="BUSINESS_DAYS"/>
+        <task-sla task-id="qa_manager_approval" duration="P5D" unit="BUSINESS_DAYS"/>
+        <task-sla task-id="corrective_action" duration="P30D" unit="CALENDAR_DAYS"/>
+        <task-sla task-id="send_feedback" duration="P3D" unit="BUSINESS_DAYS"/>
+    </sla>
+    
+</workflow-definition>

@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    IM-Authz ロール・権限設定
+    Role and Permission Configuration for IM-Authz
+    
+    GCP0602準拠の権限管理設定
+-->
+<authz-configuration xmlns="http://www.intra-mart.jp/authz/configuration" version="1.0">
+    
+    <description>
+        購買先品質審査管理システムのロールベースアクセス制御設定
+    </description>
+    
+    <!-- ロール定義 -->
+    <roles>
+        <!-- 品質保証部長 -->
+        <role id="QA_MANAGER" name="品質保証部長">
+            <description>
+                審査結果の最終承認、リスト登録・更新、審査記録の閲覧・編集を行う
+            </description>
+            <permissions>
+                <permission ref="AUDIT_APPROVE"/>
+                <permission ref="SUPPLIER_REGISTER"/>
+                <permission ref="SUPPLIER_UPDATE"/>
+                <permission ref="SUPPLIER_VIEW"/>
+                <permission ref="AUDIT_VIEW"/>
+                <permission ref="AUDIT_EDIT"/>
+                <permission ref="CORRECTIVE_ACTION_APPROVE"/>
+                <permission ref="REPORT_GENERATE"/>
+                <permission ref="SYSTEM_ADMIN"/>
+            </permissions>
+        </role>
+        
+        <!-- 品質保証部審査員 -->
+        <role id="QA_AUDITOR" name="品質保証部審査員">
+            <description>
+                審査の実施、審査記録の作成・編集、是正処置の管理を行う
+            </description>
+            <permissions>
+                <permission ref="AUDIT_CONDUCT"/>
+                <permission ref="AUDIT_VIEW"/>
+                <permission ref="AUDIT_EDIT"/>
+                <permission ref="SUPPLIER_VIEW"/>
+                <permission ref="CORRECTIVE_ACTION_CREATE"/>
+                <permission ref="CORRECTIVE_ACTION_EDIT"/>
+                <permission ref="REPORT_GENERATE"/>
+            </permissions>
+        </role>
+        
+        <!-- 品質保証部一般 -->
+        <role id="QA_DEPT" name="品質保証部">
+            <description>
+                審査記録の閲覧、購買先情報の閲覧を行う
+            </description>
+            <permissions>
+                <permission ref="AUDIT_VIEW"/>
+                <permission ref="SUPPLIER_VIEW"/>
+                <permission ref="REPORT_VIEW"/>
+            </permissions>
+        </role>
+        
+        <!-- 申請部門 -->
+        <role id="REQUESTING_DEPT" name="申請部門">
+            <description>
+                審査申請（様式-1相当）の作成、自部門の申請状況の閲覧を行う
+            </description>
+            <permissions>
+                <permission ref="AUDIT_REQUEST"/>
+                <permission ref="AUDIT_VIEW_OWN"/>
+                <permission ref="SUPPLIER_VIEW"/>
+            </permissions>
+        </role>
+        
+        <!-- 調達部 -->
+        <role id="PROCUREMENT_DEPT" name="調達部">
+            <description>
+                再評価対象業者の選定、審査記録の閲覧、購買先情報の閲覧を行う
+            </description>
+            <permissions>
+                <permission ref="REVIEW_SELECT"/>
+                <permission ref="AUDIT_VIEW"/>
+                <permission ref="SUPPLIER_VIEW"/>
+                <permission ref="SUPPLIER_UPDATE"/>
+                <permission ref="REPORT_VIEW"/>
+            </permissions>
+        </role>
+        
+        <!-- システム管理者 -->
+        <role id="SYSTEM_ADMIN" name="システム管理者">
+            <description>
+                システム全体の管理、設定変更、全データへのアクセスを行う
+            </description>
+            <permissions>
+                <permission ref="SYSTEM_ADMIN"/>
+                <permission ref="AUDIT_APPROVE"/>
+                <permission ref="SUPPLIER_REGISTER"/>
+                <permission ref="SUPPLIER_UPDATE"/>
+                <permission ref="SUPPLIER_DELETE"/>
+                <permission ref="SUPPLIER_VIEW"/>
+                <permission ref="AUDIT_VIEW"/>
+                <permission ref="AUDIT_EDIT"/>
+                <permission ref="AUDIT_DELETE"/>
+                <permission ref="CORRECTIVE_ACTION_APPROVE"/>
+                <permission ref="REPORT_GENERATE"/>
+                <permission ref="CONFIG_EDIT"/>
+            </permissions>
+        </role>
+    </roles>
+    
+    <!-- 権限定義 -->
+    <permissions>
+        <!-- 審査関連 -->
+        <permission id="AUDIT_REQUEST" name="審査申請">
+            <description>新規購買先の審査を申請する</description>
+            <resource-type>AUDIT</resource-type>
+            <action>CREATE</action>
+        </permission>
+        
+        <permission id="AUDIT_CONDUCT" name="審査実施">
+            <description>審査を実施し、採点を行う</description>
+            <resource-type>AUDIT</resource-type>
+            <action>CONDUCT</action>
+        </permission>
+        
+        <permission id="AUDIT_VIEW" name="審査閲覧">
+            <description>全ての審査記録を閲覧する</description>
+            <resource-type>AUDIT</resource-type>
+            <action>READ</action>
+        </permission>
+        
+        <permission id="AUDIT_VIEW_OWN" name="自部門審査閲覧">
+            <description>自部門が申請した審査記録のみ閲覧する</description>
+            <resource-type>AUDIT</resource-type>
+            <action>READ</action>
+            <scope>OWN_DEPARTMENT</scope>
+        </permission>
+        
+        <permission id="AUDIT_EDIT" name="審査編集">
+            <description>審査記録を編集する</description>
+            <resource-type>AUDIT</resource-type>
+            <action>UPDATE</action>
+        </permission>
+        
+        <permission id="AUDIT_DELETE" name="審査削除">
+            <description>審査記録を削除する</description>
+            <resource-type>AUDIT</resource-type>
+            <action>DELETE</action>
+        </permission>
+        
+        <permission id="AUDIT_APPROVE" name="審査承認">
+            <description>審査結果を承認する</description>
+            <resource-type>AUDIT</resource-type>
+            <action>APPROVE</action>
+        </permission>
+        
+        <!-- 購買先関連 -->
+        <permission id="SUPPLIER_REGISTER" name="購買先登録">
+            <description>新規購買先をマスターに登録する</description>
+            <resource-type>SUPPLIER</resource-type>
+            <action>CREATE</action>
+        </permission>
+        
+        <permission id="SUPPLIER_VIEW" name="購買先閲覧">
+            <description>購買先マスターを閲覧する</description>
+            <resource-type>SUPPLIER</resource-type>
+            <action>READ</action>
+        </permission>
+        
+        <permission id="SUPPLIER_UPDATE" name="購買先更新">
+            <description>購買先情報を更新する</description>
+            <resource-type>SUPPLIER</resource-type>
+            <action>UPDATE</action>
+        </permission>
+        
+        <permission id="SUPPLIER_DELETE" name="購買先削除">
+            <description>購買先マスターから削除する</description>
+            <resource-type>SUPPLIER</resource-type>
+            <action>DELETE</action>
+        </permission>
+        
+        <!-- 再評価関連 -->
+        <permission id="REVIEW_SELECT" name="再評価対象選定">
+            <description>定期再評価の対象業者を選定する</description>
+            <resource-type>REVIEW</resource-type>
+            <action>SELECT</action>
+        </permission>
+        
+        <!-- 是正処置関連 -->
+        <permission id="CORRECTIVE_ACTION_CREATE" name="是正処置作成">
+            <description>是正処置要求を作成する</description>
+            <resource-type>CORRECTIVE_ACTION</resource-type>
+            <action>CREATE</action>
+        </permission>
+        
+        <permission id="CORRECTIVE_ACTION_EDIT" name="是正処置編集">
+            <description>是正処置記録を編集する</description>
+            <resource-type>CORRECTIVE_ACTION</resource-type>
+            <action>UPDATE</action>
+        </permission>
+        
+        <permission id="CORRECTIVE_ACTION_APPROVE" name="是正処置承認">
+            <description>是正処置の完了を承認する</description>
+            <resource-type>CORRECTIVE_ACTION</resource-type>
+            <action>APPROVE</action>
+        </permission>
+        
+        <!-- レポート関連 -->
+        <permission id="REPORT_GENERATE" name="レポート生成">
+            <description>審査報告書（様式-8、様式-11）を生成する</description>
+            <resource-type>REPORT</resource-type>
+            <action>GENERATE</action>
+        </permission>
+        
+        <permission id="REPORT_VIEW" name="レポート閲覧">
+            <description>審査報告書を閲覧する</description>
+            <resource-type>REPORT</resource-type>
+            <action>READ</action>
+        </permission>
+        
+        <!-- システム管理 -->
+        <permission id="SYSTEM_ADMIN" name="システム管理">
+            <description>システム全体の管理を行う</description>
+            <resource-type>SYSTEM</resource-type>
+            <action>ADMIN</action>
+        </permission>
+        
+        <permission id="CONFIG_EDIT" name="設定編集">
+            <description>システム設定を編集する</description>
+            <resource-type>CONFIG</resource-type>
+            <action>UPDATE</action>
+        </permission>
+    </permissions>
+    
+    <!-- リソースタイプ定義 -->
+    <resource-types>
+        <resource-type id="AUDIT" name="審査">
+            <description>審査記録リソース</description>
+        </resource-type>
+        <resource-type id="SUPPLIER" name="購買先">
+            <description>購買先マスターリソース</description>
+        </resource-type>
+        <resource-type id="REVIEW" name="再評価">
+            <description>定期再評価リソース</description>
+        </resource-type>
+        <resource-type id="CORRECTIVE_ACTION" name="是正処置">
+            <description>是正処置リソース</description>
+        </resource-type>
+        <resource-type id="REPORT" name="レポート">
+            <description>審査報告書リソース</description>
+        </resource-type>
+        <resource-type id="SYSTEM" name="システム">
+            <description>システム全体リソース</description>
+        </resource-type>
+        <resource-type id="CONFIG" name="設定">
+            <description>システム設定リソース</description>
+        </resource-type>
+    </resource-types>
+    
+    <!-- ロールマッピング（サンプル） -->
+    <role-mappings>
+        <!-- 実際の実装では、intra-martのユーザー・組織マスターと連携 -->
+        <role-mapping role-id="QA_MANAGER">
+            <user-id>qa_manager_001</user-id>
+            <organization-id>QA_DEPT</organization-id>
+        </role-mapping>
+        
+        <role-mapping role-id="QA_AUDITOR">
+            <user-id>qa_auditor_001</user-id>
+            <user-id>qa_auditor_002</user-id>
+            <organization-id>QA_DEPT</organization-id>
+        </role-mapping>
+        
+        <role-mapping role-id="PROCUREMENT_DEPT">
+            <organization-id>PROCUREMENT</organization-id>
+        </role-mapping>
+    </role-mappings>
+    
+</authz-configuration>

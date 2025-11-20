@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>審査採点フォーム - Audit Scoring Form</title>
+    <style>
+        body {
+            font-family: 'Meiryo', 'MS PGothic', sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        .form-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .form-section h2 {
+            color: #0066cc;
+            margin-top: 0;
+            font-size: 18px;
+        }
+        .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+        .form-group {
+            flex: 1;
+        }
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        .scoring-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .scoring-table th {
+            background-color: #0066cc;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+        }
+        .scoring-table td {
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+        .scoring-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .score-radio {
+            display: flex;
+            gap: 20px;
+        }
+        .score-radio label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+        .score-radio input[type="radio"] {
+            width: auto;
+        }
+        .result-section {
+            background-color: #e3f2fd;
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 30px;
+            border: 2px solid #0066cc;
+        }
+        .result-section h2 {
+            color: #0066cc;
+            margin-top: 0;
+        }
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #ccc;
+        }
+        .result-row:last-child {
+            border-bottom: none;
+        }
+        .result-label {
+            font-weight: bold;
+            color: #333;
+        }
+        .result-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #0066cc;
+        }
+        .rating-excellent {
+            color: #4caf50;
+        }
+        .rating-good {
+            color: #2196f3;
+        }
+        .rating-acceptable {
+            color: #ff9800;
+        }
+        .rating-unacceptable {
+            color: #f44336;
+        }
+        .btn {
+            padding: 10px 30px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        .btn-primary {
+            background-color: #0066cc;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #0052a3;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        .formula-info {
+            background-color: #fff3cd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ffc107;
+        }
+        .formula-info strong {
+            color: #856404;
+        }
+        .required {
+            color: red;
+            margin-left: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>審査採点フォーム (Audit Scoring Form)</h1>
+        <p>様式-2（書類審査）/ 様式-5（実地審査）</p>
+
+        <!-- 基本情報セクション -->
+        <div class="form-section">
+            <h2>基本情報</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>審査ID <span class="required">*</span></label>
+                    <input type="text" id="auditId" readonly value="AUD-20251120-001">
+                </div>
+                <div class="form-group">
+                    <label>審査種別 <span class="required">*</span></label>
+                    <select id="auditType">
+                        <option value="NEW">新規審査</option>
+                        <option value="PERIODIC">定期再評価</option>
+                        <option value="SPECIAL">特別審査</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>様式種別 <span class="required">*</span></label>
+                    <select id="formType" onchange="loadQuestions()">
+                        <option value="FORM-2">様式-2（書類審査）</option>
+                        <option value="FORM-5">様式-5（実地審査）</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>購買先名 <span class="required">*</span></label>
+                    <input type="text" id="supplierName" value="株式会社優良部品製作所" readonly>
+                </div>
+                <div class="form-group">
+                    <label>審査実施日 <span class="required">*</span></label>
+                    <input type="date" id="auditDate" value="2025-11-20">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>審査員名 <span class="required">*</span></label>
+                    <input type="text" id="auditorName" value="品質太郎">
+                </div>
+                <div class="form-group">
+                    <label>審査員所属部門 <span class="required">*</span></label>
+                    <input type="text" id="auditorDept" value="品質保証部">
+                </div>
+            </div>
+        </div>
+
+        <!-- 計算式説明 -->
+        <div class="formula-info">
+            <strong>総合点計算式:</strong> 総合点 = (評価点合計 × 100) / (4 × 総項目数 - 4 × 未調査項目数)
+            <br>
+            <strong>評価基準:</strong> 優(80点以上) / 良(70-79点) / 可(60-69点) / 不可(60点未満)
+            <br>
+            <strong>判定基準:</strong> 合格(80点以上) / 是正指示(60-79点) / 不合格(60点未満)
+        </div>
+
+        <!-- 採点テーブル -->
+        <div class="form-section">
+            <h2>審査項目採点</h2>
+            <table class="scoring-table" id="scoringTable">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">No.</th>
+                        <th style="width: 400px;">審査項目</th>
+                        <th style="width: 300px;">評価点</th>
+                        <th>備考</th>
+                    </tr>
+                </thead>
+                <tbody id="scoringTableBody">
+                    <!-- JavaScriptで動的に生成 -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 自動計算結果セクション -->
+        <div class="result-section">
+            <h2>自動計算結果</h2>
+            <div class="result-row">
+                <span class="result-label">総項目数:</span>
+                <span class="result-value" id="totalItems">0</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">未調査項目数:</span>
+                <span class="result-value" id="notApplicableItems">0</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">評価点合計:</span>
+                <span class="result-value" id="scoreSum">0</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">総合点:</span>
+                <span class="result-value" id="totalScore">0.00</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">評価:</span>
+                <span class="result-value" id="rating">-</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">判定:</span>
+                <span class="result-value" id="decision">-</span>
+            </div>
+        </div>
+
+        <!-- コメント欄 -->
+        <div class="form-section">
+            <h2>総合所見・コメント</h2>
+            <div class="form-group">
+                <label>コメント</label>
+                <textarea id="comments" placeholder="審査結果に関する総合所見やコメントを入力してください"></textarea>
+            </div>
+        </div>
+
+        <!-- アクションボタン -->
+        <div style="margin-top: 30px; text-align: center;">
+            <button class="btn btn-primary" onclick="calculateScore()">採点結果を計算</button>
+            <button class="btn btn-success" onclick="saveAudit()">保存</button>
+            <button class="btn btn-success" onclick="submitForApproval()">承認申請</button>
+            <button class="btn btn-secondary" onclick="cancel()">キャンセル</button>
+        </div>
+    </div>
+
+    <script>
+        // 様式-2（書類審査）の審査項目
+        const form2Questions = [
+            { no: 1, text: '品質マニュアルが整備されているか' },
+            { no: 2, text: '組織図が明確に定義されているか' },
+            { no: 3, text: '品質記録が適切に保管されているか' },
+            { no: 4, text: '文書管理規定が整備されているか' },
+            { no: 5, text: '内部監査が定期的に実施されているか' },
+            { no: 6, text: 'マネジメントレビューが実施されているか' },
+            { no: 7, text: '是正処置・予防処置の手順が確立されているか' },
+            { no: 8, text: '教育訓練計画が策定されているか' },
+            { no: 9, text: '検査基準書が整備されているか' },
+            { no: 10, text: '不適合品管理手順が確立されているか' }
+        ];
+
+        // 様式-5（実地審査）の審査項目
+        const form5Questions = [
+            { no: 1, text: '製造設備は適切に保全されているか' },
+            { no: 2, text: '作業環境は清潔に保たれているか（5S活動）' },
+            { no: 3, text: '検査設備の校正は適切に実施されているか' },
+            { no: 4, text: '作業手順書は現場に配備されているか' },
+            { no: 5, text: '作業者は手順書に従って作業しているか' },
+            { no: 6, text: '不適合品の識別・隔離が適切に行われているか' },
+            { no: 7, text: '計測器の管理が適切に行われているか' },
+            { no: 8, text: '原材料の受入検査が実施されているか' },
+            { no: 9, text: '工程内検査が適切に実施されているか' },
+            { no: 10, text: '最終検査が適切に実施されているか' },
+            { no: 11, text: 'トレーサビリティが確保されているか' },
+            { no: 12, text: '安全衛生管理が適切に行われているか' }
+        ];
+
+        // 審査項目を読み込み
+        function loadQuestions() {
+            const formType = document.getElementById('formType').value;
+            const questions = formType === 'FORM-2' ? form2Questions : form5Questions;
+            const tbody = document.getElementById('scoringTableBody');
+            tbody.innerHTML = '';
+
+            questions.forEach(q => {
+                const row = `
+                    <tr>
+                        <td>${q.no}</td>
+                        <td>${q.text}</td>
+                        <td>
+                            <div class="score-radio">
+                                <label>
+                                    <input type="radio" name="score_${q.no}" value="4" onchange="calculateScore()">
+                                    4点（適合）
+                                </label>
+                                <label>
+                                    <input type="radio" name="score_${q.no}" value="2" onchange="calculateScore()">
+                                    2点（一部不適合）
+                                </label>
+                                <label>
+                                    <input type="radio" name="score_${q.no}" value="0" onchange="calculateScore()">
+                                    0点（不適合）
+                                </label>
+                                <label>
+                                    <input type="radio" name="score_${q.no}" value="NA" onchange="calculateScore()">
+                                    未調査
+                                </label>
+                            </div>
+                        </td>
+                        <td>
+                            <input type="text" id="remarks_${q.no}" placeholder="備考を入力" style="width: 100%;">
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+
+            calculateScore();
+        }
+
+        // 総合点を計算
+        function calculateScore() {
+            const formType = document.getElementById('formType').value;
+            const questions = formType === 'FORM-2' ? form2Questions : form5Questions;
+            
+            let totalItems = questions.length;
+            let notApplicableItems = 0;
+            let scoreSum = 0;
+
+            questions.forEach(q => {
+                const selectedScore = document.querySelector(`input[name="score_${q.no}"]:checked`);
+                if (selectedScore) {
+                    if (selectedScore.value === 'NA') {
+                        notApplicableItems++;
+                    } else {
+                        scoreSum += parseInt(selectedScore.value);
+                    }
+                }
+            });
+
+            // 総合点計算: (評価点合計 × 100) / (4 × 総項目数 - 4 × 未調査項目数)
+            const denominator = (4 * totalItems) - (4 * notApplicableItems);
+            const totalScore = denominator > 0 ? (scoreSum * 100) / denominator : 0;
+
+            // 評価を決定
+            let rating = '';
+            let ratingClass = '';
+            if (totalScore >= 80) {
+                rating = '優';
+                ratingClass = 'rating-excellent';
+            } else if (totalScore >= 70) {
+                rating = '良';
+                ratingClass = 'rating-good';
+            } else if (totalScore >= 60) {
+                rating = '可';
+                ratingClass = 'rating-acceptable';
+            } else {
+                rating = '不可';
+                ratingClass = 'rating-unacceptable';
+            }
+
+            // 判定を決定
+            let decision = '';
+            if (totalScore >= 80) {
+                decision = '合格 (PASS)';
+            } else if (totalScore >= 60) {
+                decision = '是正指示 (CONDITIONAL)';
+            } else {
+                decision = '不合格 (FAIL)';
+            }
+
+            // 結果を表示
+            document.getElementById('totalItems').textContent = totalItems;
+            document.getElementById('notApplicableItems').textContent = notApplicableItems;
+            document.getElementById('scoreSum').textContent = scoreSum;
+            document.getElementById('totalScore').textContent = totalScore.toFixed(2);
+            
+            const ratingElement = document.getElementById('rating');
+            ratingElement.textContent = rating;
+            ratingElement.className = 'result-value ' + ratingClass;
+            
+            const decisionElement = document.getElementById('decision');
+            decisionElement.textContent = decision;
+            decisionElement.className = 'result-value ' + ratingClass;
+        }
+
+        function saveAudit() {
+            // 実際の実装では、intra-mart APIを使用してデータベースに保存
+            const auditData = collectFormData();
+            console.log('Saving audit data:', auditData);
+            alert('審査データを保存しました。');
+        }
+
+        function submitForApproval() {
+            // 実際の実装では、IM-Workflowを起動して承認プロセスを開始
+            const auditData = collectFormData();
+            console.log('Submitting for approval:', auditData);
+            alert('承認申請を送信しました。品質保証部長の承認をお待ちください。');
+        }
+
+        function collectFormData() {
+            const formType = document.getElementById('formType').value;
+            const questions = formType === 'FORM-2' ? form2Questions : form5Questions;
+            
+            const scoreDetails = [];
+            questions.forEach(q => {
+                const selectedScore = document.querySelector(`input[name="score_${q.no}"]:checked`);
+                const remarks = document.getElementById(`remarks_${q.no}`).value;
+                
+                if (selectedScore) {
+                    scoreDetails.push({
+                        questionNumber: q.no,
+                        questionText: q.text,
+                        score: selectedScore.value === 'NA' ? null : parseInt(selectedScore.value),
+                        isNotApplicable: selectedScore.value === 'NA',
+                        remarks: remarks
+                    });
+                }
+            });
+
+            return {
+                auditId: document.getElementById('auditId').value,
+                auditType: document.getElementById('auditType').value,
+                formType: formType,
+                supplierName: document.getElementById('supplierName').value,
+                auditDate: document.getElementById('auditDate').value,
+                auditorName: document.getElementById('auditorName').value,
+                auditorDept: document.getElementById('auditorDept').value,
+                totalScore: parseFloat(document.getElementById('totalScore').textContent),
+                rating: document.getElementById('rating').textContent,
+                decision: document.getElementById('decision').textContent,
+                comments: document.getElementById('comments').value,
+                scoreDetails: scoreDetails
+            };
+        }
+
+        function cancel() {
+            if (confirm('入力内容を破棄してよろしいですか？')) {
+                window.history.back();
+            }
+        }
+
+        // 初期表示
+        loadQuestions();
+    </script>
+</body>
+</html>
