@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title}">SQAS Demo</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>購買先品質審査管理システム</h1>
+            <p class="subtitle">Supplier Quality Audit System - デモ環境</p>
+        </header>
+        
+        <main>
+            <div class="welcome-section">
+                <h2>デモ環境へようこそ</h2>
+                <p>このデモ環境では、GCP0602準拠の購買先品質審査管理システムの主要機能を体験できます。</p>
+            </div>
+            
+            <div class="menu-grid">
+                <a href="/suppliers" class="menu-card">
+                    <h3>📋 購買先マスター一覧</h3>
+                    <p>登録済み購買先の一覧表示と視覚的アラート機能</p>
+                </a>
+                
+                <a href="/audit-scoring" class="menu-card">
+                    <h3>✏️ 審査採点フォーム</h3>
+                    <p>GCP0602準拠の自動スコア計算機能</p>
+                </a>
+                
+                <a href="/workflow-simulator" class="menu-card">
+                    <h3>🔄 ワークフローシミュレーター</h3>
+                    <p>新規審査・再評価プロセスの可視化</p>
+                </a>
+                
+                <div class="menu-card batch-card">
+                    <h3>⏰ バッチジョブテスト</h3>
+                    <p>通知機能のテスト実行</p>
+                    <div class="batch-buttons">
+                        <button onclick="runReviewReminderBatch()" class="btn btn-primary">再評価リマインダー</button>
+                        <button onclick="runCorrectiveActionBatch()" class="btn btn-primary">是正処置リマインダー</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="info-section">
+                <h3>📧 メール確認</h3>
+                <p>バッチジョブから送信されたメールは、MailHogで確認できます：</p>
+                <a href="http://localhost:8025" target="_blank" class="btn btn-secondary">MailHogを開く</a>
+            </div>
+            
+            <div class="info-section">
+                <h3>📚 システム情報</h3>
+                <ul>
+                    <li><strong>準拠規定:</strong> GCP0602 購買先の品質審査管理規定</li>
+                    <li><strong>データベース:</strong> PostgreSQL (サンプルデータ投入済み)</li>
+                    <li><strong>スコア計算式:</strong> (評価点合計 × 100) / (4 × 総項目数 - 4 × 未調査項目数)</li>
+                    <li><strong>評価基準:</strong> 優(80+), 良(70-79), 可(60-69), 不可(&lt;60)</li>
+                    <li><strong>等級:</strong> 1(優良), 2(良好), 3(標準)</li>
+                </ul>
+            </div>
+        </main>
+        
+        <footer>
+            <p>SQAS Demo Sandbox v1.0.0 | GCP0602準拠</p>
+        </footer>
+    </div>
+    
+    <script>
+        async function runReviewReminderBatch() {
+            try {
+                const response = await fetch('/api/batch/review-reminder', { method: 'POST' });
+                const result = await response.json();
+                alert(`${result.message}\n送信件数: ${result.notificationsSent}件\n\nMailHog (http://localhost:8025) でメールを確認してください。`);
+            } catch (error) {
+                alert('エラーが発生しました: ' + error.message);
+            }
+        }
+        
+        async function runCorrectiveActionBatch() {
+            try {
+                const response = await fetch('/api/batch/corrective-action-reminder', { method: 'POST' });
+                const result = await response.json();
+                alert(`${result.message}\n警告送信: ${result.warningsSent}件\n期限超過通知: ${result.overdueNotificationsSent}件\n\nMailHog (http://localhost:8025) でメールを確認してください。`);
+            } catch (error) {
+                alert('エラーが発生しました: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title}">審査採点フォーム</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>審査採点フォーム（デモ）</h1>
+            <nav>
+                <a href="/" class="btn btn-secondary">← ホームに戻る</a>
+            </nav>
+        </header>
+        
+        <main>
+            <div class="info-section">
+                <h3>GCP0602準拠 スコア計算</h3>
+                <p><strong>計算式:</strong> (評価点合計 × 100) / (4 × 総項目数 - 4 × 未調査項目数)</p>
+                <p><strong>評価基準:</strong> 優(80+), 良(70-79), 可(60-69), 不可(&lt;60)</p>
+            </div>
+            
+            <form id="scoring-form">
+                <h3>評価項目（サンプル）</h3>
+                
+                <div class="scoring-section">
+                    <h4>1. 品質管理体制</h4>
+                    
+                    <div class="scoring-item">
+                        <label>1.1 品質管理責任者の配置</label>
+                        <select name="item-1-1" class="score-select">
+                            <option value="">選択してください</option>
+                            <option value="4">4点 - 適合</option>
+                            <option value="2">2点 - 一部不適合</option>
+                            <option value="0">0点 - 不適合</option>
+                            <option value="null">未調査</option>
+                        </select>
+                    </div>
+                    
+                    <div class="scoring-item">
+                        <label>1.2 品質マニュアルの整備</label>
+                        <select name="item-1-2" class="score-select">
+                            <option value="">選択してください</option>
+                            <option value="4">4点 - 適合</option>
+                            <option value="2">2点 - 一部不適合</option>
+                            <option value="0">0点 - 不適合</option>
+                            <option value="null">未調査</option>
+                        </select>
+                    </div>
+                    
+                    <div class="scoring-item">
+                        <label>1.3 内部監査の実施</label>
+                        <select name="item-1-3" class="score-select">
+                            <option value="">選択してください</option>
+                            <option value="4">4点 - 適合</option>
+                            <option value="2">2点 - 一部不適合</option>
+                            <option value="0">0点 - 不適合</option>
+                            <option value="null">未調査</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="scoring-section">
+                    <h4>2. 製造管理</h4>
+                    
+                    <div class="scoring-item">
+                        <label>2.1 工程管理の実施</label>
+                        <select name="item-2-1" class="score-select">
+                            <option value="">選択してください</option>
+                            <option value="4">4点 - 適合</option>
+                            <option value="2">2点 - 一部不適合</option>
+                            <option value="0">0点 - 不適合</option>
+                            <option value="null">未調査</option>
+                        </select>
+                    </div>
+                    
+                    <div class="scoring-item">
+                        <label>2.2 検査体制の整備</label>
+                        <select name="item-2-2" class="score-select">
+                            <option value="">選択してください</option>
+                            <option value="4">4点 - 適合</option>
+                            <option value="2">2点 - 一部不適合</option>
+                            <option value="0">0点 - 不適合</option>
+                            <option value="null">未調査</option>
+                        </select>
+                    </div>
+                    
+                    <div class="scoring-item">
+                        <label>2.3 不適合品の管理</label>
+                        <select name="item-2-3" class="score-select">
+                            <option value="">選択してください</option>
+                            <option value="4">4点 - 適合</option>
+                            <option value="2">2点 - 一部不適合</option>
+                            <option value="0">0点 - 不適合</option>
+                            <option value="null">未調査</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="scoring-section">
+                    <h4>3. 設備管理</h4>
+                    
+                    <div class="scoring-item">
+                        <label>3.1 設備保全計画の策定</label>
+                        <select name="item-3-1" class="score-select">
+                            <option value="">選択してください</option>
+                            <option value="4">4点 - 適合</option>
+                            <option value="2">2点 - 一部不適合</option>
+                            <option value="0">0点 - 不適合</option>
+                            <option value="null">未調査</option>
+                        </select>
+                    </div>
+                    
+                    <div class="scoring-item">
+                        <label>3.2 計測器の校正管理</label>
+                        <select name="item-3-2" class="score-select">
+                            <option value="">選択してください</option>
+                            <option value="4">4点 - 適合</option>
+                            <option value="2">2点 - 一部不適合</option>
+                            <option value="0">0点 - 不適合</option>
+                            <option value="null">未調査</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="button-group">
+                    <button type="button" onclick="calculateScore()" class="btn btn-primary">スコア計算</button>
+                    <button type="reset" class="btn btn-secondary">リセット</button>
+                </div>
+            </form>
+            
+            <div id="result" style="display: none;" class="result-section">
+                <h3>計算結果</h3>
+                <div id="result-content"></div>
+            </div>
+        </main>
+        
+        <footer>
+            <p>SQAS Demo Sandbox v1.0.0</p>
+        </footer>
+    </div>
+    
+    <script>
+        async function calculateScore() {
+            const selects = document.querySelectorAll('.score-select');
+            const scores = [];
+            
+            let hasEmptySelection = false;
+            selects.forEach((select, index) => {
+                if (select.value === '') {
+                    hasEmptySelection = true;
+                } else {
+                    scores.push({
+                        itemId: select.name,
+                        score: select.value === 'null' ? null : parseInt(select.value)
+                    });
+                }
+            });
+            
+            if (hasEmptySelection) {
+                alert('すべての項目を選択してください（未調査を含む）');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/calculate-score', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ scores })
+                });
+                
+                const result = await response.json();
+                displayResult(result);
+                
+            } catch (error) {
+                alert('計算エラー: ' + error.message);
+            }
+        }
+        
+        function displayResult(result) {
+            const resultDiv = document.getElementById('result');
+            const contentDiv = document.getElementById('result-content');
+            
+            let ratingClass = '';
+            if (result.totalScore >= 80) ratingClass = 'rating-excellent';
+            else if (result.totalScore >= 70) ratingClass = 'rating-good';
+            else if (result.totalScore >= 60) ratingClass = 'rating-fair';
+            else ratingClass = 'rating-poor';
+            
+            contentDiv.innerHTML = `
+                <div class="result-grid">
+                    <div class="result-item">
+                        <label>計算式:</label>
+                        <div>${result.formula}</div>
+                    </div>
+                    
+                    <div class="result-item highlight ${ratingClass}">
+                        <label>総合点:</label>
+                        <div class="score-large">${result.totalScore.toFixed(2)}点</div>
+                    </div>
+                    
+                    <div class="result-item">
+                        <label>評価:</label>
+                        <div class="rating-badge ${ratingClass}">${result.rating}</div>
+                    </div>
+                    
+                    <div class="result-item">
+                        <label>判定:</label>
+                        <div><strong>${result.decision}</strong></div>
+                    </div>
+                    
+                    <div class="result-item">
+                        <label>等級:</label>
+                        <div><span class="badge badge-grade-${result.grade}">${result.grade}</span></div>
+                    </div>
+                    
+                    <div class="result-item">
+                        <label>総項目数:</label>
+                        <div>${result.totalItems}項目</div>
+                    </div>
+                    
+                    <div class="result-item">
+                        <label>未調査項目数:</label>
+                        <div>${result.notApplicableItems}項目</div>
+                    </div>
+                    
+                    <div class="result-item">
+                        <label>評価点合計:</label>
+                        <div>${result.scoreSum}点</div>
+                    </div>
+                </div>
+            `;
+            
+            resultDiv.style.display = 'block';
+            resultDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    container_name: sqas-demo-db
+    environment:
+      POSTGRES_DB: sqas_demo
+      POSTGRES_USER: sqas_user
+      POSTGRES_PASSWORD: sqas_password
+      TZ: Asia/Tokyo
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./docker/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+      - ../database/01_create_tables.sql:/docker-entrypoint-initdb.d/01_create_tables.sql
+      - ../database/02_sample_data.sql:/docker-entrypoint-initdb.d/02_sample_data.sql
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sqas_user -d sqas_demo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: sqas-demo-mail
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    environment:
+      TZ: Asia/Tokyo
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sqas-demo-app
+    depends_on:
+      db:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/sqas_demo
+      SPRING_DATASOURCE_USERNAME: sqas_user
+      SPRING_DATASOURCE_PASSWORD: sqas_password
+      SPRING_MAIL_HOST: mailhog
+      SPRING_MAIL_PORT: 1025
+      TZ: Asia/Tokyo
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./demo-output:/app/demo-output
+
+volumes:
+  postgres_data:

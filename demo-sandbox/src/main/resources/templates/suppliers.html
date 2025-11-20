@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title}">購買先マスター一覧</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>購買先マスター一覧</h1>
+            <nav>
+                <a href="/" class="btn btn-secondary">← ホームに戻る</a>
+            </nav>
+        </header>
+        
+        <main>
+            <div class="alert-legend">
+                <h3>アラート表示</h3>
+                <div class="legend-items">
+                    <span class="legend-item"><span class="badge badge-danger">赤</span> 再評価期限超過</span>
+                    <span class="legend-item"><span class="badge badge-warning">黄</span> 再評価期限1ヶ月以内</span>
+                    <span class="legend-item"><span class="badge badge-success">緑</span> 正常</span>
+                </div>
+            </div>
+            
+            <div id="loading">データを読み込み中...</div>
+            <div id="error" style="display: none;" class="error-message"></div>
+            
+            <table id="suppliers-table" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>購買先ID</th>
+                        <th>会社名</th>
+                        <th>登録日</th>
+                        <th>等級</th>
+                        <th>再評価予定日</th>
+                        <th>ISO9001</th>
+                        <th>ISO有効期限</th>
+                        <th>ステータス</th>
+                    </tr>
+                </thead>
+                <tbody id="suppliers-tbody">
+                </tbody>
+            </table>
+        </main>
+        
+        <footer>
+            <p>SQAS Demo Sandbox v1.0.0</p>
+        </footer>
+    </div>
+    
+    <script>
+        async function loadSuppliers() {
+            try {
+                const response = await fetch('/api/suppliers');
+                const suppliers = await response.json();
+                
+                const tbody = document.getElementById('suppliers-tbody');
+                tbody.innerHTML = '';
+                
+                const today = new Date();
+                const oneMonthFromNow = new Date();
+                oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
+                
+                suppliers.forEach(supplier => {
+                    const row = document.createElement('tr');
+                    
+                    // アラートレベルの判定
+                    let alertClass = '';
+                    if (supplier.nextreviewdate) {
+                        const reviewDate = new Date(supplier.nextreviewdate);
+                        if (reviewDate < today) {
+                            alertClass = 'alert-danger';
+                        } else if (reviewDate <= oneMonthFromNow) {
+                            alertClass = 'alert-warning';
+                        } else {
+                            alertClass = 'alert-success';
+                        }
+                    }
+                    
+                    row.className = alertClass;
+                    
+                    row.innerHTML = `
+                        <td>${supplier.supplierid}</td>
+                        <td><strong>${supplier.companyname}</strong></td>
+                        <td>${formatDate(supplier.initialregistrationdate)}</td>
+                        <td><span class="badge badge-grade-${supplier.currentrating}">${supplier.currentrating}</span></td>
+                        <td>${formatDate(supplier.nextreviewdate)}</td>
+                        <td>${supplier.iso9001certified ? '✓' : '✗'}</td>
+                        <td>${formatDate(supplier.iso9001expirydate)}</td>
+                        <td>${supplier.supplierstatus}</td>
+                    `;
+                    
+                    tbody.appendChild(row);
+                });
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('suppliers-table').style.display = 'table';
+                
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').textContent = 'データの読み込みに失敗しました: ' + error.message;
+            }
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ja-JP');
+        }
+        
+        // ページ読み込み時にデータを取得
+        window.addEventListener('DOMContentLoaded', loadSuppliers);
+    </script>
+</body>
+</html>

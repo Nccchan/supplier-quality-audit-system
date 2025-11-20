@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title}">ワークフローシミュレーター</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ワークフローシミュレーター</h1>
+            <nav>
+                <a href="/" class="btn btn-secondary">← ホームに戻る</a>
+            </nav>
+        </header>
+        
+        <main>
+            <div class="info-section">
+                <h3>ワークフロー概要</h3>
+                <p>GCP0602準拠の審査プロセスを可視化します。実際のIM-Workflowの動作をシミュレートしています。</p>
+            </div>
+            
+            <div class="workflow-tabs">
+                <button class="tab-button active" onclick="showWorkflow('new-audit')">新規審査フロー</button>
+                <button class="tab-button" onclick="showWorkflow('periodic-review')">定期再評価フロー</button>
+            </div>
+            
+            <div id="new-audit-workflow" class="workflow-content">
+                <h3>新規審査フロー（付表-4準拠）</h3>
+                
+                <div class="workflow-diagram">
+                    <div class="workflow-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4>審査申請</h4>
+                            <p><strong>担当:</strong> 申請部門</p>
+                            <p><strong>様式:</strong> 様式-1（審査申請書）</p>
+                            <p>新規購買先の審査を申請</p>
+                        </div>
+                    </div>
+                    
+                    <div class="workflow-arrow">↓</div>
+                    
+                    <div class="workflow-step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4>審査計画策定</h4>
+                            <p><strong>担当:</strong> 品質保証部</p>
+                            <p>審査方法（書類/実地）の決定</p>
+                            <p>審査員の選定</p>
+                        </div>
+                    </div>
+                    
+                    <div class="workflow-arrow">↓</div>
+                    
+                    <div class="workflow-step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h4>審査実施</h4>
+                            <p><strong>担当:</strong> 審査員</p>
+                            <p><strong>様式:</strong> 様式-2（書類審査）または様式-5（実地審査）</p>
+                            <p>評価項目の採点（4点/2点/0点/未調査）</p>
+                        </div>
+                    </div>
+                    
+                    <div class="workflow-arrow">↓</div>
+                    
+                    <div class="workflow-step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h4>スコア計算</h4>
+                            <p><strong>システム:</strong> 自動計算</p>
+                            <p>総合点 = (評価点合計 × 100) / (4 × 総項目数 - 4 × 未調査項目数)</p>
+                            <p>評価・判定・等級の決定</p>
+                        </div>
+                    </div>
+                    
+                    <div class="workflow-arrow">↓</div>
+                    
+                    <div class="workflow-step decision-step">
+                        <div class="step-number">5</div>
+                        <div class="step-content">
+                            <h4>判定分岐</h4>
+                            <p><strong>合格（80点以上）:</strong> ステップ8へ</p>
+                            <p><strong>是正指示（60-79点）:</strong> ステップ6へ</p>
+                            <p><strong>不合格（60点未満）:</strong> 終了</p>
+                        </div>
+                    </div>
+                    
+                    <div class="workflow-arrow">↓ 是正指示の場合</div>
+                    
+                    <div class="workflow-step">
+                        <div class="step-number">6</div>
+                        <div class="step-content">
+                            <h4>是正処置要求</h4>
+                            <p><strong>担当:</strong> 品質保証部</p>
+                            <p>是正処置計画の提出要求（期限: 原則30日）</p>
+                            <p>システムが期限管理（3日前警告、超過通知）</p>
+                        </div>
+                    </div>
+                    
+                    <div class="workflow-arrow">↓</div>
+                    
+                    <div class="workflow-step">
+                        <div class="step-number">7</div>
+                        <div class="step-content">
+                            <h4>是正処置確認</h4>
+                            <p><strong>担当:</strong> 品質保証部長</p>
+                            <p>是正処置の妥当性確認</p>
+                            <p>承認後、ステップ8へ</p>
+                        </div>
+                    </div>
+                    
+                    <div class="workflow-arrow">↓</div>
+                    
+                    <div class="workflow-step">
+                        <div class="step-number">8</div>
+                        <div class="step-content">
+                            <h4>審査結果報告</h4>
+                            <p><strong>担当:</strong> 品質保証部</p>
+                            <p><strong>様式:</strong> 様式-8（審査結果報告書）</p>
+                            <p>品質保証部長による最終承認</p>
+                        </div>
+                    </div>
+                    
+                    <div class="workflow-arrow">↓</div>
+                    
+                    <div class="workflow-step success-step">
+                        <div class="step-number">9</div>
+                        <div class="step-content">
+                            <h4>購買先リスト登録</h4>
+                            <p><strong>システム:</strong> 自動登録</p>
+                            <p>購買先マスターへの登録</p>
+                            <p>等級の設定</p>
+                            <p>再評価予定日の設定（2年後）</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="periodic-review-workflow" class="workflow-content" style="display: none;">
+                <h3>定期再評価フロー（付表-5準拠）</h3>
+                
+                <div class="workflow-diagram">
+                    <div class="workflow-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4>再評価通知</h4>
+                            <p><strong>システム:</strong> 自動通知</p>
+                            <p>再評価予定日の1ヶ月前に通知</p>
+                            <p>対象: 品質保証部、調達部</p>
+                        </div>
+                    </div>
+                    
+                    <div class="workflow-arrow">↓</div>
+                    
+                    <div class="workflow-step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4>対象業者選定</h4>
+                            <p><strong>担当:</strong> 調達部、品質保証部</p>
+                            <p>再評価対象の確認</p>
+                            <p>実地監査の計画</p>
+                        </div>
+                    </div>
+                    
+                    <div class="workflow-arrow">↓</div>
+                    
+                    <div class="workflow-step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h4>実地監査実施</h4>
+                            <p><strong>担当:</strong> 監査員</p>
+                            <p><strong>様式:</strong> 様式-11（実施監査結果）</p>
+                            <p>現地での品質管理体制確認</p>
+                        </div>
+                    </div>
+                    
+                    <div class="workflow-arrow">↓</div>
+                    
+                    <div class="workflow-step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h4>スコア計算・評価</h4>
+                            <p><strong>システム:</strong> 自動計算</p>
+                            <p>新規審査と同じ計算式</p>
+                            <p>等級の再判定</p>
+                        </div>
+                    </div>
+                    
+                    <div class="workflow-arrow">↓</div>
+                    
+                    <div class="workflow-step decision-step">
+                        <div class="step-number">5</div>
+                        <div class="step-content">
+                            <h4>判定分岐</h4>
+                            <p><strong>合格:</strong> ステップ7へ</p>
+                            <p><strong>是正指示:</strong> ステップ6へ</p>
+                            <p><strong>不合格:</strong> 取引停止検討</p>
+                        </div>
+                    </div>
+                    
+                    <div class="workflow-arrow">↓ 是正指示の場合</div>
+                    
+                    <div class="workflow-step">
+                        <div class="step-number">6</div>
+                        <div class="step-content">
+                            <h4>是正処置管理</h4>
+                            <p><strong>担当:</strong> 品質保証部</p>
+                            <p>新規審査と同じプロセス</p>
+                            <p>期限管理（30日、自動通知）</p>
+                        </div>
+                    </div>
+                    
+                    <div class="workflow-arrow">↓</div>
+                    
+                    <div class="workflow-step">
+                        <div class="step-number">7</div>
+                        <div class="step-content">
+                            <h4>結果承認</h4>
+                            <p><strong>担当:</strong> 品質保証部長</p>
+                            <p>監査結果の承認</p>
+                            <p>等級変更の承認</p>
+                        </div>
+                    </div>
+                    
+                    <div class="workflow-arrow">↓</div>
+                    
+                    <div class="workflow-step">
+                        <div class="step-number">8</div>
+                        <div class="step-content">
+                            <h4>フィードバック</h4>
+                            <p><strong>担当:</strong> 品質保証部</p>
+                            <p><strong>様式:</strong> 付表-6（フィードバック）</p>
+                            <p>購買先への結果通知</p>
+                        </div>
+                    </div>
+                    
+                    <div class="workflow-arrow">↓</div>
+                    
+                    <div class="workflow-step success-step">
+                        <div class="step-number">9</div>
+                        <div class="step-content">
+                            <h4>マスター更新</h4>
+                            <p><strong>システム:</strong> 自動更新</p>
+                            <p>等級の更新</p>
+                            <p>次回再評価予定日の設定（2年後）</p>
+                            <p>監査履歴の記録</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="info-section">
+                <h3>📌 重要ポイント</h3>
+                <ul>
+                    <li><strong>自動通知:</strong> 再評価1ヶ月前、是正処置期限3日前・超過時</li>
+                    <li><strong>期限管理:</strong> 是正処置は原則30日以内</li>
+                    <li><strong>等級管理:</strong> 1(優良/80+), 2(良好/70-79), 3(標準/60-69)</li>
+                    <li><strong>再評価周期:</strong> 登録から2年後</li>
+                    <li><strong>承認権限:</strong> 最終承認は品質保証部長</li>
+                </ul>
+            </div>
+        </main>
+        
+        <footer>
+            <p>SQAS Demo Sandbox v1.0.0</p>
+        </footer>
+    </div>
+    
+    <script>
+        function showWorkflow(workflowType) {
+            // タブの切り替え
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // コンテンツの切り替え
+            document.getElementById('new-audit-workflow').style.display = 'none';
+            document.getElementById('periodic-review-workflow').style.display = 'none';
+            
+            if (workflowType === 'new-audit') {
+                document.getElementById('new-audit-workflow').style.display = 'block';
+            } else {
+                document.getElementById('periodic-review-workflow').style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>
